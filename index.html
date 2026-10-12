@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2B2034">
+<meta name="description" content="My Life Assistant: reflect each month, keep your 10 favourite photos, and celebrate the people and days that matter.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<!--APP-START-->
+<title>My Life Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a phone-first monthly planner. One column up to 34rem, bottom tab bar,
+   months shown as a 12-cell year "spread" like the pages of a paper planner. */
+:root {
+  --paper: #F7F5F9;
+  --surface: #FFFFFF;
+  --ink: #2B2034;
+  --muted: #6A6072;
+  --line: #E3DEE8;
+  --plum: #2B2034;
+  --lilac: #E9E2F1;
+  --marigold: #D9922B;
+  --marigold-soft: #FBEBD2;
+  --on-plum: #F7F5F9;
+  --ok: #3E7A5A;
+  --font-display: "Gloock", "Bodoni 72", Didot, Georgia, serif;
+  --font-body: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --radius: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #151018; --surface: #1E1823; --ink: #EEE9F2; --muted: #A79CB0; --line: #322A39;
+    --plum: #261C2E; --lilac: #2C2335; --marigold: #EBAA4B; --marigold-soft: #3A2C17; --on-plum: #EEE9F2; --ok: #6FBF93;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #151018; --surface: #1E1823; --ink: #EEE9F2; --muted: #A79CB0; --line: #322A39;
+  --plum: #261C2E; --lilac: #2C2335; --marigold: #EBAA4B; --marigold-soft: #3A2C17; --on-plum: #EEE9F2; --ok: #6FBF93;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 400 1rem/1.55 var(--font-body); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.12; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+
+.shell { max-width: 34rem; margin: 0 auto; padding-inline: 18px; padding-block: 0 calc(100px + env(safe-area-inset-bottom, 0px)); }
+.view { display: grid; gap: 24px; padding-block: 8px; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.lede { color: var(--muted); font-size: 1.06rem; }
+.note { color: var(--muted); font-size: 0.86rem; }
+.section { display: grid; gap: 12px; }
+.section > h2 { font-size: 1.5rem; }
+.big { font-size: 2.1rem; }
+
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); display: flex; justify-content: space-between; align-items: center; padding-block: 14px; gap: 12px; }
+.brand { font-family: var(--font-display); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 24px; height: 24px; color: var(--marigold); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--lilac); display: grid; place-items: center; font-weight: 700; border: 0; cursor: pointer; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 20px; border-radius: 999px; border: 1px solid transparent; font-weight: 600; cursor: pointer; text-decoration: none; }
+.btn-primary { background: var(--marigold); color: #24170A; }
+.btn-dark { background: var(--plum); color: var(--on-plum); }
+.btn-outline { background: var(--surface); border-color: var(--line); }
+.btn-block { width: 100%; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Month hero */
+.month-card { background: var(--plum); color: var(--on-plum); border-radius: var(--radius); padding: 22px 20px; display: grid; gap: 14px; }
+.month-card .eyebrow { color: var(--marigold); }
+.month-card h1 { font-size: 2.2rem; }
+.month-card p { color: color-mix(in srgb, var(--on-plum) 78%, transparent); }
+.meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.meter { background: color-mix(in srgb, var(--on-plum) 9%, transparent); border-radius: 12px; padding: 12px; display: grid; gap: 6px; }
+.meter b { font-size: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
+.meter span { font-size: 0.8rem; color: color-mix(in srgb, var(--on-plum) 72%, transparent); }
+.bar { height: 4px; background: color-mix(in srgb, var(--on-plum) 18%, transparent); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--marigold); }
+
+/* Year spread */
+.year { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mtile { position: relative; aspect-ratio: 3 / 4; max-width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); cursor: pointer; padding: 0; text-align: left; display: flex; flex-direction: column; justify-content: flex-end; }
+.mtile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mtile .lbl { position: relative; padding: 8px 9px; display: grid; gap: 1px; }
+.mtile.has-photo .lbl { background: linear-gradient(transparent, rgba(20, 12, 26, 0.78)); color: #FFFFFF; }
+.mtile .lbl b { font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; }
+.mtile .lbl small { font-size: 0.72rem; opacity: 0.85; font-variant-numeric: tabular-nums; }
+.mtile.future { opacity: 0.45; cursor: default; }
+.mtile.current { border: 2px solid var(--marigold); }
+.mtile .tick { position: absolute; top: 7px; right: 7px; width: 20px; height: 20px; border-radius: 50%; background: var(--ok); color: #FFFFFF; display: grid; place-items: center; }
+.mtile .tick svg { width: 12px; height: 12px; }
+
+/* Reflect */
+.month-nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; }
+.month-nav h2 { text-align: center; font-size: 1.7rem; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: grid; place-items: center; }
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+.prompt { display: grid; gap: 6px; }
+.prompt label { font-weight: 600; }
+.prompt .hint { font-size: 0.84rem; color: var(--muted); }
+textarea, input[type="text"], input[type="email"], input[type="date"], input[type="number"], select {
+  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-height: 48px; font-size: 1rem;
+}
+textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--marigold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--marigold) 25%, transparent); }
+
+.photos { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.slot { aspect-ratio: 1; max-width: 100%; border-radius: 10px; background: var(--lilac); border: 1px dashed color-mix(in srgb, var(--muted) 40%, transparent); position: relative; overflow: hidden; display: grid; place-items: center; color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.slot img { width: 100%; height: 100%; object-fit: cover; }
+.slot.filled { border-style: solid; border-color: transparent; }
+.slot .rm { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(20, 12, 26, 0.7); color: #FFFFFF; cursor: pointer; display: grid; place-items: center; font-size: 0.9rem; line-height: 1; }
+.upload { position: relative; }
+.upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.saved-flag { color: var(--ok); font-weight: 600; font-size: 0.9rem; min-height: 1.4em; }
+
+/* Lists */
+.list { display: grid; }
+.li { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.li:first-child { border-top: 1px solid var(--line); }
+.datebox { width: 52px; border-radius: 10px; background: var(--marigold-soft); text-align: center; padding: 6px 0; line-height: 1.1; }
+.datebox b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 1.35rem; }
+.datebox small { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.li h3 { font-family: var(--font-body); font-weight: 600; font-size: 1rem; }
+.li p { font-size: 0.86rem; color: var(--muted); }
+.away { font-size: 0.8rem; font-weight: 700; color: var(--marigold); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.li .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 0.8rem; padding: 4px 0 0; text-align: right; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 20px; display: grid; gap: 6px; }
+.empty b { font-weight: 600; }
+
+.form { display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid2 > * { min-width: 0; }
+.field { display: grid; gap: 6px; }
+.field label, .field legend { font-weight: 600; font-size: 0.95rem; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--plum); border-color: var(--plum); color: var(--on-plum); }
+.error { color: #C2453A; font-size: 0.86rem; font-weight: 600; }
+
+/* Keepsake */
+.keepsake { background: var(--marigold-soft); border-radius: var(--radius); padding: 20px; display: grid; gap: 10px; }
+.keepsake h2 { font-size: 1.5rem; }
+.collage { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.collage div { aspect-ratio: 1; max-width: 100%; background: color-mix(in srgb, var(--marigold) 25%, var(--surface)); border-radius: 6px; overflow: hidden; }
+.collage img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Tiers */
+.tiers { display: grid; gap: 10px; }
+.tier { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 8px; }
+.tier.current { border-color: var(--marigold); box-shadow: 0 0 0 1px var(--marigold); }
+.tier-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tier-head h3 { font-size: 1.3rem; }
+.tier-head span { font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.tier.current .tier-head span { color: var(--marigold); }
+.tier p { font-size: 0.92rem; color: var(--muted); }
+
+.device-note { background: var(--lilac); border-radius: 12px; padding: 12px 14px; font-size: 0.84rem; color: var(--muted); }
+
+/* Welcome */
+.welcome { min-height: 70vh; display: grid; align-content: center; gap: 22px; padding-block: 24px; }
+.welcome h1 { font-size: 2.5rem; }
+.welcome .tag { font-family: var(--font-display); font-size: 1.3rem; color: var(--marigold); }
+
+/* Tabs */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); }
+.tabbar nav { max-width: 34rem; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+.tab { display: grid; justify-items: center; gap: 3px; padding: 6px 2px; border: 0; background: transparent; color: var(--muted); font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+.tab svg { width: 22px; height: 22px; }
+.tab[aria-current="page"] { color: var(--ink); }
+.tab[aria-current="page"] svg { color: var(--marigold); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- WELCOME / TRY ME -->
+  <section class="welcome" id="welcome" hidden>
+    <div class="section">
+      <p class="eyebrow">Try Me · Free</p>
+      <h1>My Life Assistant</h1>
+      <p class="tag">Celebrate and experience life to its fullest, every 30 days.</p>
+      <p class="lede">Each month, take ten minutes to reflect, keep your 10 favourite photos, and never forget the days that matter. At the end of the year, it all becomes your keepsake.</p>
+    </div>
+    <form class="form" id="welcome-form" novalidate>
+      <div class="field"><label for="w-name">What should we call you?</label><input id="w-name" type="text" autocomplete="given-name" required></div>
+      <div class="field"><label for="w-email">Email <span class="note">(optional, for monthly reminders)</span></label><input id="w-email" type="email" autocomplete="email"></div>
+      <fieldset class="field"><legend>What do you want more of this year?</legend><div class="chips" data-chips="focus"></div></fieldset>
+      <p class="error" id="w-error" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit">Start my year</button>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="brand"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/><circle cx="19" cy="19" r="2"/></svg>My Life Assistant</div>
+      <button class="avatar" type="button" data-go="me" aria-label="Your profile" id="avatar">?</button>
+    </header>
+
+    <main>
+      <!-- HOME -->
+      <section class="view" id="view-home">
+        <div class="month-card">
+          <p class="eyebrow" id="home-eyebrow"></p>
+          <h1 id="home-title"></h1>
+          <p id="home-sub"></p>
+          <div class="meters">
+            <div class="meter"><b id="m-reflect">0 of 7</b><span>Reflection prompts</span><div class="bar"><i id="m-reflect-bar" style="width:0%"></i></div></div>
+            <div class="meter"><b id="m-photos">0 of 10</b><span>Photos this month</span><div class="bar"><i id="m-photos-bar" style="width:0%"></i></div></div>
+          </div>
+          <button class="btn btn-primary" type="button" id="home-cta">Reflect on this month</button>
+        </div>
+
+        <div class="section">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2 style="font-size:1.5rem">Coming up</h2><button class="chip" type="button" data-go="celebrate">See all</button></div>
+          <div class="list" id="home-upcoming"></div>
+        </div>
+
+        <div class="section">
+          <h2 style="font-size:1.5rem" id="home-year-title">Your year</h2>
+          <div class="year" id="home-year"></div>
+        </div>
+      </section>
+
+      <!-- REFLECT -->
+      <section class="view" id="view-reflect" hidden>
+        <div class="month-nav">
+          <button class="icon-btn" type="button" id="prev-month" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <h2 id="reflect-title"></h2>
+          <button class="icon-btn" type="button" id="next-month" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+
+        <div class="section">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h2 style="font-size:1.3rem">Your 10 favourite photos</h2><span class="note" id="photo-count">0 of 10</span></div>
+          <div class="photos" id="photo-grid"></div>
+          <div class="upload"><button class="btn btn-outline btn-block" type="button" id="add-photos-btn">Add photos</button><input id="photo-input" type="file" accept="image/*" multiple aria-label="Add photos"></div>
+          <p class="error" id="photo-error" hidden></p>
+        </div>
+
+        <form class="form" id="reflect-form" novalidate>
+          <h2 style="font-size:1.3rem">Monthly reflection</h2>
+          <div id="prompts" class="form"></div>
+          <p class="saved-flag" id="saved-flag" aria-live="polite"></p>
+          <button class="btn btn-dark btn-block" type="submit">Save reflection</button>
+        </form>
+      </section>
+
+      <!-- YEAR / KEEPSAKE -->
+      <section class="view" id="view-year" hidden>
+        <div class="section">
+          <p class="eyebrow">Annual keepsake</p>
+          <h2 class="big" id="year-title"></h2>
+          <p class="lede">Every month you reflect and add photos fills a page. In December, your year becomes a keepsake album.</p>
+        </div>
+        <div class="year" id="year-grid"></div>
+        <div class="keepsake">
+          <p class="eyebrow">Your album so far</p>
+          <h2 id="keepsake-count">0 photos, 0 months</h2>
+          <div class="collage" id="collage"></div>
+          <p class="note">The printed keepsake album is planned at $75 and will be offered at the end of the year.</p>
+        </div>
+      </section>
+
+      <!-- CELEBRATE -->
+      <section class="view" id="view-celebrate" hidden>
+        <div class="section">
+          <p class="eyebrow">Make every occasion count</p>
+          <h2 class="big">Celebrations</h2>
+          <p class="lede">Add birthdays, anniversaries and the days you celebrate. We'll remind you ahead of time, with local gift ideas in your budget once partner shops join.</p>
+        </div>
+        <form class="form" id="celebrate-form" novalidate>
+          <div class="grid2">
+            <div class="field"><label for="c-who">Who</label><input id="c-who" type="text" placeholder="e.g. Mum"></div>
+            <div class="field"><label for="c-what">Occasion</label><select id="c-what"><option>Birthday</option><option>Anniversary</option><option>Other</option></select></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="c-date">Date</label><input id="c-date" type="date"></div>
+            <div class="field"><label for="c-budget">Gift budget</label><input id="c-budget" type="number" min="0" step="5" inputmode="numeric" placeholder="$"></div>
+          </div>
+          <p class="error" id="c-error" hidden></p>
+          <button class="btn btn-dark btn-block" type="submit">Add celebration</button>
+        </form>
+        <div class="list" id="celebrate-list"></div>
+      </section>
+
+      <!-- ME -->
+      <section class="view" id="view-me" hidden>
+        <div class="section">
+          <p class="eyebrow">Your profile</p>
+          <h2 class="big" id="me-title"></h2>
+        </div>
+        <form class="form" id="me-form" novalidate>
+          <div class="field"><label for="me-name">Name</label><input id="me-name" type="text" autocomplete="given-name"></div>
+          <div class="field"><label for="me-email">Email</label><input id="me-email" type="email" autocomplete="email"></div>
+          <fieldset class="field"><legend>What I want more of this year</legend><div class="chips" data-chips="focus"></div></fieldset>
+          <fieldset class="field"><legend>Groups I'd join</legend><div class="chips" data-chips="groups"></div></fieldset>
+          <fieldset class="field"><legend>Experiences I'd love</legend><div class="chips" data-chips="experiences"></div></fieldset>
+          <p class="saved-flag" id="me-saved" aria-live="polite"></p>
+          <button class="btn btn-dark btn-block" type="submit">Save profile</button>
+        </form>
+
+        <div class="section">
+          <h2 style="font-size:1.5rem">Memberships</h2>
+          <div class="tiers">
+            <div class="tier current"><div class="tier-head"><h3>Try Me</h3><span>Your plan · Free</span></div><p>Monthly reflections, 10 photos a month, your year view and celebration reminders.</p></div>
+            <div class="tier"><div class="tier-head"><h3>Lifestyle</h3><span>Coming soon</span></div><p>Join custom groups and get matched with local events and resources aligned with your goals.</p></div>
+            <div class="tier"><div class="tier-head"><h3>Elite</h3><span>$150 / month · Coming soon</span></div><p>Each month choose coaching, counselling, a personal service, cleaning or meals. Book childcare when you need it.</p></div>
+            <div class="tier"><div class="tier-head"><h3>Luxury</h3><span>Coming soon</span></div><p>Everything in Elite, plus an annual personalised photo session.</p></div>
+          </div>
+        </div>
+
+        <p class="device-note" id="device-note">Your reflections and photos are saved on this device only. Accounts that sync across your devices are coming next.</p>
+        <button class="btn btn-outline btn-block" type="button" id="reset-btn">Start over on this device</button>
+        <div id="reset-confirm" class="empty" hidden>
+          <b>Delete everything on this device?</b>
+          <p class="note">This removes your reflections, photos and celebrations. It can't be undone.</p>
+          <div class="grid2"><button class="btn btn-outline" type="button" id="reset-no">Keep it</button><button class="btn btn-dark" type="button" id="reset-yes">Delete</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="tabbar" id="tabbar" hidden>
+  <nav aria-label="Main">
+    <button class="tab" type="button" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></button>
+    <button class="tab" type="button" data-go="reflect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg><span>Reflect</span></button>
+    <button class="tab" type="button" data-go="year"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>My Year</span></button>
+    <button class="tab" type="button" data-go="celebrate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6-1 6-1.5S14 5 12 9z"/></svg><span>Celebrate</span></button>
+    <button class="tab" type="button" data-go="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg><span>Me</span></button>
+  </nav>
+</div>
+
+<script>
+/* ---------- Content (from Candyce's My Life Assistant deck and My Life Planner) ---------- */
+const PROMPTS = [
+  { id: "accomplishments", q: "Top accomplishments", hint: "What are you proud of this month?" },
+  { id: "challenge", q: "Biggest challenge", hint: "What was hard, and how did you handle it?" },
+  { id: "gratitude", q: "Appreciations & gratitude", hint: "Who and what are you thankful for?" },
+  { id: "passions", q: "Passions", hint: "What lit you up?" },
+  { id: "connections", q: "Connections", hint: "Who did you spend meaningful time with?" },
+  { id: "lessons", q: "Lessons learned this month", hint: "What will you take with you?" },
+  { id: "next", q: "To do differently next month", hint: "One or two things to change." }
+];
+const CHOICES = {
+  focus: ["Connection & family", "Play & adventure", "Physical health", "Mental & spiritual health", "Growth & projects", "Community", "Financial calm", "Self care", "Travel", "Giving back"],
+  groups: ["Singles", "Couples", "Families", "Toddler parents", "Single parents", "Entrepreneurs", "Healers", "Newcomers", "Sports & interests", "Spirituality"],
+  experiences: ["Progressive dinners", "Retreats", "Date nights", "Family nights", "Workshops", "Scavenger hunts", "Laughter yoga", "Meditation", "Block parties", "Surprise theme adventures"]
+};
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MAX_PHOTOS = 10;
+
+/* ---------- Storage on this device (localStorage for text, IndexedDB for photos) ---------- */
+const mem = {};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("mla:" + k); return v ? JSON.parse(v) : d; } catch { return k in mem ? mem[k] : d; } },
+  set(k, v) { mem[k] = v; try { localStorage.setItem("mla:" + k, JSON.stringify(v)); } catch {} }
+};
+const memPhotos = new Map();
+let dbp = null;
+function db() {
+  if (!dbp) dbp = new Promise(res => {
+    try {
+      const r = indexedDB.open("my-life-assistant", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("photos", { keyPath: "id" });
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    } catch { res(null); }
+  });
+  return dbp;
+}
+async function photosFor(month) {
+  const d = await db();
+  if (!d) return [...memPhotos.values()].filter(p => p.month === month).sort((a, b) => a.added - b.added);
+  return new Promise(res => {
+    const out = [];
+    const tx = d.transaction("photos").objectStore("photos").openCursor();
+    tx.onsuccess = e => { const c = e.target.result; if (c) { if (c.value.month === month) out.push(c.value); c.continue(); } else res(out.sort((a, b) => a.added - b.added)); };
+    tx.onerror = () => res(out);
+  });
+}
+async function allPhotos() {
+  const d = await db();
+  if (!d) return [...memPhotos.values()];
+  return new Promise(res => { const r = d.transaction("photos").objectStore("photos").getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); });
+}
+async function putPhoto(p) { const d = await db(); if (!d) { memPhotos.set(p.id, p); return; } return new Promise(res => { const t = d.transaction("photos", "readwrite"); t.objectStore("photos").put(p); t.oncomplete = res; t.onerror = res; }); }
+async function delPhoto(id) { const d = await db(); if (!d) { memPhotos.delete(id); return; } return new Promise(res => { const t = d.transaction("photos", "readwrite"); t.objectStore("photos").delete(id); t.oncomplete = res; t.onerror = res; }); }
+async function clearPhotos() { const d = await db(); memPhotos.clear(); if (!d) return; return new Promise(res => { const t = d.transaction("photos", "readwrite"); t.objectStore("photos").clear(); t.oncomplete = res; t.onerror = res; }); }
+
+/* ---------- Helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const now = new Date();
+const thisKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+const keyOf = (y, m) => `${y}-${String(m + 1).padStart(2, "0")}`;
+const labelOf = k => { const [y, m] = k.split("-").map(Number); return `${MONTHS[m - 1]} ${y}`; };
+const urls = new Map();
+const urlFor = p => { if (!urls.has(p.id)) urls.set(p.id, URL.createObjectURL(p.blob)); return urls.get(p.id); };
+const tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg>';
+
+let profile = store.get("profile", null);
+let reflections = store.get("reflections", {});
+let celebrations = store.get("celebrations", []);
+const answered = k => PROMPTS.filter(p => (reflections[k]?.[p.id] || "").trim()).length;
+
+/* ---------- Chips ---------- */
+function bindChips(root, values) {
+  $$("[data-chips]", root).forEach(w => {
+    const key = w.dataset.chips;
+    const sel = new Set(values[key] || []);
+    w.innerHTML = CHOICES[key].map(o => `<button class="chip" type="button" data-val="${esc(o)}" aria-pressed="${sel.has(o)}">${esc(o)}</button>`).join("");
+    w.onclick = e => { const c = e.target.closest(".chip"); if (!c) return; c.setAttribute("aria-pressed", String(c.getAttribute("aria-pressed") !== "true")); };
+  });
+}
+const readChips = (root, key) => $$(`[data-chips="${key}"] .chip[aria-pressed="true"]`, root).map(c => c.dataset.val);
+
+/* ---------- Navigation ---------- */
+const VIEWS = ["home", "reflect", "year", "celebrate", "me"];
+let reflectKey = thisKey;
+function go(name) {
+  if (!VIEWS.includes(name)) name = "home";
+  VIEWS.forEach(v => { $("#view-" + v).hidden = v !== name; });
+  $$(".tab").forEach(t => t.dataset.go === name ? t.setAttribute("aria-current", "page") : t.removeAttribute("aria-current"));
+  if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  window.scrollTo({ top: 0 });
+  ({ home: renderHome, reflect: renderReflect, year: renderYear, celebrate: renderCelebrate, me: renderMe })[name]();
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) { e.preventDefault(); go(b.dataset.go); } });
+
+/* ---------- Celebrations ---------- */
+function nextOccurrence(dateStr) {
+  const [, m, d] = dateStr.split("-").map(Number);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
+  return { date: next, days: Math.round((next - today) / 86400000) };
+}
+function celebrationRows(list, withDelete) {
+  return list.map(c => {
+    const n = nextOccurrence(c.date);
+    const away = n.days === 0 ? "Today" : n.days === 1 ? "Tomorrow" : `${n.days} days`;
+    const budget = c.budget ? ` · Gift budget $${esc(c.budget)}` : "";
+    return `<div class="li"><div class="datebox"><b>${n.date.getDate()}</b><small>${MONTHS[n.date.getMonth()].slice(0, 3)}</small></div>
+      <div style="min-width:0"><h3>${esc(c.who)}</h3><p>${esc(c.what)}${budget}</p></div>
+      <div style="display:grid;justify-items:end"><span class="away">${away}</span>${withDelete ? `<button class="del" type="button" data-del="${esc(c.id)}">Remove</button>` : ""}</div></div>`;
+  }).join("");
+}
+const sortedCelebrations = () => [...celebrations].sort((a, b) => nextOccurrence(a.date).days - nextOccurrence(b.date).days);
+
+/* ---------- Year tiles ---------- */
+async function yearTiles(el) {
+  const y = now.getFullYear();
+  const photos = await allPhotos();
+  el.innerHTML = MONTHS.map((name, i) => {
+    const k = keyOf(y, i);
+    const mine = photos.filter(p => p.month === k).sort((a, b) => a.added - b.added);
+    const future = k > thisKey;
+    const done = answered(k) === PROMPTS.length && mine.length > 0;
+    const img = mine[0] ? `<img src="${urlFor(mine[0])}" alt="">` : "";
+    return `<button class="mtile${mine[0] ? " has-photo" : ""}${future ? " future" : ""}${k === thisKey ? " current" : ""}" type="button" ${future ? "disabled" : `data-month="${k}"`} aria-label="${name}">
+      ${img}${done ? `<span class="tick">${tick}</span>` : ""}
+      <span class="lbl"><b>${name.slice(0, 3)}</b><small>${future ? "Ahead" : `${mine.length} photos · ${answered(k)}/7`}</small></span></button>`;
+  }).join("");
+  el.onclick = e => { const t = e.target.closest("[data-month]"); if (!t) return; reflectKey = t.dataset.month; go("reflect"); };
+  return photos;
+}
+
+/* ---------- Home ---------- */
+async function renderHome() {
+  $("#avatar").textContent = (profile?.name || "?").charAt(0).toUpperCase();
+  const daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+  $("#home-eyebrow").textContent = `${MONTHS[now.getMonth()]} · ${daysLeft} days left`;
+  $("#home-title").textContent = `Hi ${profile?.name || "there"}.`;
+  const a = answered(thisKey);
+  const photos = await photosFor(thisKey);
+  $("#home-sub").textContent = a === PROMPTS.length && photos.length
+    ? "This month's page is done. Beautiful work."
+    : "Take ten minutes to look back on this month while it's fresh.";
+  $("#m-reflect").textContent = `${a} of 7`; $("#m-reflect-bar").style.width = (a / 7 * 100) + "%";
+  $("#m-photos").textContent = `${photos.length} of 10`; $("#m-photos-bar").style.width = (photos.length / 10 * 100) + "%";
+  $("#home-cta").textContent = a || photos.length ? "Continue this month" : "Reflect on this month";
+  const up = sortedCelebrations().slice(0, 3);
+  $("#home-upcoming").innerHTML = up.length ? celebrationRows(up, false)
+    : `<div class="empty"><b>No celebrations yet</b><p class="note">Add birthdays and anniversaries so you never miss one.</p><button class="btn btn-outline" type="button" data-go="celebrate">Add a celebration</button></div>`;
+  $("#home-year-title").textContent = `Your ${now.getFullYear()}`;
+  await yearTiles($("#home-year"));
+}
+$("#home-cta").addEventListener("click", () => { reflectKey = thisKey; go("reflect"); });
+
+/* ---------- Reflect ---------- */
+async function renderReflect() {
+  $("#reflect-title").textContent = labelOf(reflectKey);
+  const [y, m] = reflectKey.split("-").map(Number);
+  $("#prev-month").disabled = reflectKey <= keyOf(now.getFullYear() - 1, 0);
+  $("#next-month").disabled = reflectKey >= thisKey;
+  const r = reflections[reflectKey] || {};
+  $("#prompts").innerHTML = PROMPTS.map(p => `<div class="prompt"><label for="p-${p.id}">${esc(p.q)}</label><span class="hint">${esc(p.hint)}</span><textarea id="p-${p.id}" name="${p.id}">${esc(r[p.id] || "")}</textarea></div>`).join("");
+  $("#saved-flag").textContent = "";
+  await renderPhotos();
+}
+function shiftMonth(delta) {
+  const [y, m] = reflectKey.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  reflectKey = keyOf(d.getFullYear(), d.getMonth());
+  renderReflect();
+}
+$("#prev-month").addEventListener("click", () => shiftMonth(-1));
+$("#next-month").addEventListener("click", () => shiftMonth(1));
+
+async function renderPhotos() {
+  const list = await photosFor(reflectKey);
+  $("#photo-count").textContent = `${list.length} of ${MAX_PHOTOS}`;
+  $("#photo-grid").innerHTML = Array.from({ length: MAX_PHOTOS }, (_, i) => list[i]
+    ? `<div class="slot filled"><img src="${urlFor(list[i])}" alt="Photo ${i + 1}"><button class="rm" type="button" data-rm="${list[i].id}" aria-label="Remove photo ${i + 1}">×</button></div>`
+    : `<div class="slot">${i + 1}</div>`).join("");
+  const full = list.length >= MAX_PHOTOS;
+  $("#add-photos-btn").disabled = full; $("#photo-input").disabled = full;
+  $("#add-photos-btn").textContent = full ? "All 10 photos added" : "Add photos";
+}
+$("#photo-grid").addEventListener("click", async e => {
+  const b = e.target.closest("[data-rm]"); if (!b) return;
+  await delPhoto(b.dataset.rm); renderPhotos();
+});
+
+function shrink(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u);
+      c.toBlob(b => b ? res(b) : rej(new Error("encode")), "image/jpeg", 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); rej(new Error("read")); };
+    img.src = u;
+  });
+}
+$("#photo-input").addEventListener("change", async e => {
+  const err = $("#photo-error"); err.hidden = true;
+  const files = [...e.target.files]; e.target.value = "";
+  const have = (await photosFor(reflectKey)).length;
+  const room = MAX_PHOTOS - have;
+  if (files.length > room) { err.textContent = `You can keep 10 photos a month. Added the first ${room}; remove one to swap it out.`; err.hidden = false; }
+  $("#add-photos-btn").textContent = "Adding…";
+  let t = Date.now();
+  for (const f of files.slice(0, room)) {
+    try { await putPhoto({ id: crypto.randomUUID(), month: reflectKey, added: t++, blob: await shrink(f) }); }
+    catch { err.textContent = "One of those files couldn't be opened as a photo. Try a JPEG or PNG."; err.hidden = false; }
+  }
+  renderPhotos();
+});
+
+$("#reflect-form").addEventListener("submit", e => {
+  e.preventDefault();
+  reflections[reflectKey] = Object.fromEntries(PROMPTS.map(p => [p.id, $("#p-" + p.id).value]));
+  reflections[reflectKey].updated = new Date().toISOString();
+  store.set("reflections", reflections);
+  const n = answered(reflectKey);
+  $("#saved-flag").textContent = n === PROMPTS.length ? `Saved. ${MONTHS[Number(reflectKey.slice(5)) - 1]} is complete.` : `Saved. ${n} of 7 prompts answered.`;
+});
+
+/* ---------- Year ---------- */
+async function renderYear() {
+  $("#year-title").textContent = `Your ${now.getFullYear()}`;
+  const photos = (await yearTiles($("#year-grid"))).filter(p => p.month.startsWith(String(now.getFullYear()))).sort((a, b) => a.added - b.added);
+  const months = new Set(photos.map(p => p.month)).size;
+  $("#keepsake-count").textContent = `${photos.length} ${photos.length === 1 ? "photo" : "photos"}, ${months} ${months === 1 ? "month" : "months"}`;
+  $("#collage").innerHTML = Array.from({ length: 8 }, (_, i) => `<div>${photos[i] ? `<img src="${urlFor(photos[i])}" alt="">` : ""}</div>`).join("");
+}
+
+/* ---------- Celebrate ---------- */
+function renderCelebrate() {
+  const list = sortedCelebrations();
+  $("#celebrate-list").innerHTML = list.length ? celebrationRows(list, true)
+    : `<div class="empty"><b>Nothing here yet</b><p class="note">Start with the birthdays you never want to miss.</p></div>`;
+}
+$("#celebrate-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const who = $("#c-who").value.trim(), date = $("#c-date").value, err = $("#c-error");
+  if (!who || !date) { err.textContent = "Add who it's for and the date."; err.hidden = false; return; }
+  err.hidden = true;
+  celebrations.push({ id: crypto.randomUUID(), who, what: $("#c-what").value, date, budget: $("#c-budget").value });
+  store.set("celebrations", celebrations);
+  e.target.reset(); renderCelebrate();
+});
+$("#celebrate-list").addEventListener("click", e => {
+  const b = e.target.closest("[data-del]"); if (!b) return;
+  celebrations = celebrations.filter(c => c.id !== b.dataset.del);
+  store.set("celebrations", celebrations); renderCelebrate();
+});
+
+/* ---------- Me ---------- */
+function renderMe() {
+  $("#me-title").textContent = profile?.name || "You";
+  $("#me-name").value = profile?.name || ""; $("#me-email").value = profile?.email || "";
+  bindChips($("#me-form"), profile || {});
+  $("#me-saved").textContent = ""; $("#reset-confirm").hidden = true; $("#reset-btn").hidden = false;
+}
+$("#me-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = $("#me-form");
+  profile = { ...profile, name: $("#me-name").value.trim() || profile.name, email: $("#me-email").value.trim(),
+    focus: readChips(f, "focus"), groups: readChips(f, "groups"), experiences: readChips(f, "experiences") };
+  store.set("profile", profile);
+  $("#me-title").textContent = profile.name; $("#avatar").textContent = profile.name.charAt(0).toUpperCase();
+  $("#me-saved").textContent = "Profile saved.";
+});
+$("#reset-btn").addEventListener("click", () => { $("#reset-confirm").hidden = false; $("#reset-btn").hidden = true; });
+$("#reset-no").addEventListener("click", () => { $("#reset-confirm").hidden = true; $("#reset-btn").hidden = false; });
+$("#reset-yes").addEventListener("click", async () => {
+  ["profile", "reflections", "celebrations"].forEach(k => { delete mem[k]; try { localStorage.removeItem("mla:" + k); } catch {} });
+  await clearPhotos();
+  profile = null; reflections = {}; celebrations = [];
+  start();
+});
+
+/* ---------- Welcome ---------- */
+bindChips($("#welcome-form"), {});
+$("#welcome-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("#w-name").value.trim();
+  if (!name) { $("#w-error").textContent = "Tell us your name to get started."; $("#w-error").hidden = false; return; }
+  profile = { name, email: $("#w-email").value.trim(), focus: readChips($("#welcome-form"), "focus"), groups: [], experiences: [], tier: "try_me", joined: new Date().toISOString() };
+  store.set("profile", profile);
+  start();
+});
+
+function start() {
+  const signedUp = Boolean(profile);
+  $("#welcome").hidden = signedUp; $("#app").hidden = !signedUp; $("#tabbar").hidden = !signedUp;
+  if (signedUp) go(location.hash.slice(1) || "home");
+}
+start();
+</script>
+<!--APP-END-->
+</body>
+</html>
